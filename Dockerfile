@@ -17,32 +17,38 @@ RUN apt-get update && apt-get install -y \
     libtiff5-dev \
     libjpeg-dev \
     locales \
+    libv8-dev \
+    libprotobuf-dev \
+    protobuf-compiler \
+    libjq-dev \
     && locale-gen es_CO.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV LANG=es_CO.UTF-8
 ENV LC_ALL=es_CO.UTF-8
 
-COPY packages.R /packages.R
+# Instalar paquetes de R uno por uno para identificar errores
+RUN Rscript -e "install.packages('leaflet', repos='https://cran.rstudio.com/', dependencies=TRUE)"
+RUN Rscript -e "install.packages(c('shiny','shinydashboard','shinyWidgets','shinyjs'), repos='https://cran.rstudio.com/')"
+RUN Rscript -e "install.packages(c('readxl','dplyr','janitor','lubridate','stringr'), repos='https://cran.rstudio.com/')"
+RUN Rscript -e "install.packages(c('ggplot2','plotly','DT'), repos='https://cran.rstudio.com/')"
+RUN Rscript -e "install.packages(c('sf','writexl','tidyr','zip','openxlsx','htmltools'), repos='https://cran.rstudio.com/')"
+
 COPY app.R /srv/shiny-server/app/app.R
 
-RUN Rscript /packages.R
-
+# Verificar que todos los paquetes cargan correctamente
 RUN Rscript -e "\
-cat('=== Verificando paquetes ===\n'); \
 pkgs <- c('shiny','shinydashboard','shinyWidgets','shinyjs','readxl', \
 'dplyr','janitor','lubridate','stringr','ggplot2','plotly', \
 'DT','leaflet','sf','writexl','tidyr','zip','openxlsx','htmltools'); \
-for(p in pkgs){ if(requireNamespace(p,quietly=TRUE)) cat('OK:',p,'\n') else cat('FALTA:',p,'\n') }; \
-cat('=== Verificando sintaxis ===\n'); \
-tryCatch(parse('/srv/shiny-server/app/app.R'), error=function(e){ cat('ERROR:',conditionMessage(e),'\n'); quit(status=1) }); \
-cat('Sintaxis OK\n') \
-"
+for(p in pkgs){ \
+  if(requireNamespace(p,quietly=TRUE)) cat('OK:',p,'\n') \
+  else { cat('FALTA:',p,'\n'); quit(status=1) } \
+}"
 
 RUN printf 'run_as shiny;\nserver {\n  listen 3838;\n  location / {\n    site_dir /srv/shiny-server/app;\n    log_dir /var/log/shiny-server;\n    directory_index off;\n    sanitize_errors off;\n  }\n}\n' > /etc/shiny-server/shiny-server.conf
 
-RUN printf '#!/bin/bash\necho "=== Test app.R ==="\nRscript -e "suppressPackageStartupMessages(source(\"/srv/shiny-server/app/app.R\"))" 2>&1 | head -80 || true\necho "=== Iniciando Shiny Server ==="\nexec /usr/bin/shiny-server\n' > /start.sh && chmod +x /start.sh
-
 EXPOSE 3838
-CMD ["/start.sh"]
+CMD ["/usr/bin/shiny-server"]
 
+ 
