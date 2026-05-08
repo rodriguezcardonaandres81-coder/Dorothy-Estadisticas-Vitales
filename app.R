@@ -76,8 +76,16 @@ procesar_datos <- function(df) {
     mutate(
       fecha_nacimiento   = as.Date(fecha_nacimiento, origin = "1899-12-30"),
       anio               = year(fecha_nacimiento),
-      mes                = str_to_title(month(fecha_nacimiento, label = TRUE,
-                                              abbr = FALSE, locale = "es")),
+      mes_num            = month(fecha_nacimiento),
+      mes                = case_when(
+        mes_num == 1  ~ "Enero",    mes_num == 2  ~ "Febrero",
+        mes_num == 3  ~ "Marzo",    mes_num == 4  ~ "Abril",
+        mes_num == 5  ~ "Mayo",     mes_num == 6  ~ "Junio",
+        mes_num == 7  ~ "Julio",    mes_num == 8  ~ "Agosto",
+        mes_num == 9  ~ "Septiembre", mes_num == 10 ~ "Octubre",
+        mes_num == 11 ~ "Noviembre",  mes_num == 12 ~ "Diciembre",
+        TRUE ~ "Sin dato"
+      ),
       ips_nacimiento     = if_else(is.na(ips) | ips == "", "Municipio", ips),
       peso_nacer         = case_when(
         is.na(peso) | peso == "" ~ "Sin dato",
