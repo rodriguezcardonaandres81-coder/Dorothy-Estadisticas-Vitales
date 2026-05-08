@@ -1,14 +1,12 @@
 FROM rocker/geospatial:4.3.1
 
-# Instalar Shiny Server
 RUN apt-get update && apt-get install -y gdebi-core wget && \
     wget -q https://download3.rstudio.org/ubuntu-18.04/x86_64/shiny-server-1.5.22.1017-amd64.deb && \
     gdebi -n shiny-server-1.5.22.1017-amd64.deb && \
     rm shiny-server-1.5.22.1017-amd64.deb && \
     rm -rf /var/lib/apt/lists/*
 
-# Instalar paquetes adicionales (sf, leaflet, etc ya vienen en rocker/geospatial)
-RUN Rscript -e "install.packages(c('shinydashboard','shinyWidgets','shinyjs','plotly','DT','writexl','openxlsx','zip'), repos='https://cran.rstudio.com/', quiet=TRUE)"
+RUN Rscript -e "install.packages(c('shinydashboard','shinyWidgets','shinyjs','plotly','DT','writexl','openxlsx','zip','janitor','readxl'), repos='https://cran.rstudio.com/', quiet=TRUE)"
 
 COPY app.R /srv/shiny-server/app/app.R
 
