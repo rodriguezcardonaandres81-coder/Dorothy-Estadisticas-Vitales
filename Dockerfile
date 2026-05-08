@@ -1,6 +1,5 @@
 FROM rocker/shiny:4.3.1
 
-# Dependencias del sistema
 RUN apt-get update && apt-get install -y \
     libgdal-dev \
     libgeos-dev \
@@ -21,34 +20,31 @@ RUN apt-get update && apt-get install -y \
     libprotobuf-dev \
     protobuf-compiler \
     libjq-dev \
+    cmake \
     && locale-gen es_CO.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV LANG=es_CO.UTF-8
 ENV LC_ALL=es_CO.UTF-8
 
-# Instalar paquetes de R uno por uno para identificar errores
-RUN Rscript -e "install.packages('leaflet', repos='https://cran.rstudio.com/', dependencies=TRUE)"
-RUN Rscript -e "install.packages(c('shiny','shinydashboard','shinyWidgets','shinyjs'), repos='https://cran.rstudio.com/')"
-RUN Rscript -e "install.packages(c('readxl','dplyr','janitor','lubridate','stringr'), repos='https://cran.rstudio.com/')"
-RUN Rscript -e "install.packages(c('ggplot2','plotly','DT'), repos='https://cran.rstudio.com/')"
-RUN Rscript -e "install.packages(c('sf','writexl','tidyr','zip','openxlsx','htmltools'), repos='https://cran.rstudio.com/')"
+# Instalar paquetes por grupos - si uno falla se ve exactamente cuál es
+RUN Rscript -e "install.packages('leaflet',      repos='https://cran.rstudio.com/', dependencies=TRUE)"
+RUN Rscript -e "install.packages('sf',           repos='https://cran.rstudio.com/', dependencies=TRUE)"
+RUN Rscript -e "install.packages('plotly',       repos='https://cran.rstudio.com/', dependencies=TRUE)"
+RUN Rscript -e "install.packages('shiny',        repos='https://cran.rstudio.com/', dependencies=TRUE)"
+RUN Rscript -e "install.packages('shinydashboard', repos='https://cran.rstudio.com/')"
+RUN Rscript -e "install.packages('shinyWidgets', repos='https://cran.rstudio.com/')"
+RUN Rscript -e "install.packages('shinyjs',      repos='https://cran.rstudio.com/')"
+RUN Rscript -e "install.packages('DT',           repos='https://cran.rstudio.com/')"
+RUN Rscript -e "install.packages(c('readxl','dplyr','janitor','lubridate','stringr','ggplot2','writexl','tidyr','zip','openxlsx','htmltools'), repos='https://cran.rstudio.com/')"
 
 COPY app.R /srv/shiny-server/app/app.R
-
-# Verificar que todos los paquetes cargan correctamente
-RUN Rscript -e "\
-pkgs <- c('shiny','shinydashboard','shinyWidgets','shinyjs','readxl', \
-'dplyr','janitor','lubridate','stringr','ggplot2','plotly', \
-'DT','leaflet','sf','writexl','tidyr','zip','openxlsx','htmltools'); \
-for(p in pkgs){ \
-  if(requireNamespace(p,quietly=TRUE)) cat('OK:',p,'\n') \
-  else { cat('FALTA:',p,'\n'); quit(status=1) } \
-}"
 
 RUN printf 'run_as shiny;\nserver {\n  listen 3838;\n  location / {\n    site_dir /srv/shiny-server/app;\n    log_dir /var/log/shiny-server;\n    directory_index off;\n    sanitize_errors off;\n  }\n}\n' > /etc/shiny-server/shiny-server.conf
 
 EXPOSE 3838
 CMD ["/usr/bin/shiny-server"]
+
+
 
  
