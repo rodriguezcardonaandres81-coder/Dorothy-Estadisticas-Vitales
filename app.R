@@ -281,27 +281,81 @@ main_ui <- dashboardPage(
     ),
     conditionalPanel(
       condition = "output.archivos_cargados == true",
-      div(style = "padding:10px; background:#f8f9fa; margin:10px; border-radius:8px;",
-        h4("🎛️ Filtros", style = "color:#2E86AB; text-align:center;"),
-        pickerInput("f_ano", "📅 Año:",  choices = NULL, multiple = TRUE,
+      div(style = "padding:8px; margin:8px 6px;",
+        h4("Filtros", style = "color:rgba(255,255,255,0.55); font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; margin:8px 6px 10px 6px; padding-bottom:8px; border-bottom:0.5px solid rgba(255,255,255,0.12);"),
+        pickerInput("f_ano", "Año", choices = NULL, multiple = TRUE,
                     options = list(`actions-box` = TRUE)),
-        pickerInput("f_mes", "📋 Mes:",  choices = NULL, multiple = TRUE,
+        pickerInput("f_mes", "Mes", choices = NULL, multiple = TRUE,
                     options = list(`actions-box` = TRUE)),
-        pickerInput("f_ips", "🏥 IPS:", choices = NULL, multiple = TRUE,
+        pickerInput("f_ips", "IPS de nacimiento", choices = NULL, multiple = TRUE,
                     options = list(`actions-box` = TRUE)),
-        actionButton("reset_filtros", "🔄 Reiniciar Filtros",
-                     style = "width:100%; background:#F18F01; color:black;")
+        actionButton("reset_filtros", "Reiniciar filtros",
+                     style = "width:100%; background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.7); border:0.5px solid rgba(255,255,255,0.15); border-radius:6px; font-size:12px; margin-top:4px;")
       )
     )
   ),
   dashboardBody(
     useShinyjs(),
     tags$head(tags$style(HTML("
-      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-      .content-wrapper { background: linear-gradient(135deg,#f5f7fa 0%,#c3cfe2 100%); }
-      .box { border-radius:10px; box-shadow:0 4px 6px rgba(0,0,0,.1); border-top:3px solid #2E86AB; }
-      .box-header { background: linear-gradient(45deg,#2E86AB,#A23B72); color:white; border-radius:8px 8px 0 0; }
-      .control-label { color: black; }
+      body, .skin-blue .main-header .logo, .skin-blue .main-header .navbar {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      }
+      .skin-blue .main-sidebar { background: #0C447C; }
+      .skin-blue .sidebar { background: #0C447C; }
+      .skin-blue .main-header .logo {
+        background: #083260 !important;
+        border-bottom: 0.5px solid rgba(255,255,255,0.08) !important;
+        font-size: 15px !important; font-weight: 500 !important;
+        letter-spacing: 0.02em; color: #ffffff !important;
+      }
+      .skin-blue .main-header .logo:hover { background: #083260 !important; }
+      .skin-blue .main-header .navbar { background: #ffffff !important; border-bottom: 0.5px solid #e2e0d8; }
+      .skin-blue .main-header .navbar .sidebar-toggle { color: #444441 !important; }
+      .skin-blue .main-header .navbar .sidebar-toggle:hover { background: #f1efe8 !important; }
+      .skin-blue .sidebar-menu > li > a {
+        color: rgba(255,255,255,0.65) !important; font-size: 13px;
+        padding: 9px 14px; border-left: 3px solid transparent !important; transition: all 0.15s;
+      }
+      .skin-blue .sidebar-menu > li > a:hover {
+        background: rgba(255,255,255,0.08) !important; color: #ffffff !important;
+      }
+      .skin-blue .sidebar-menu > li.active > a,
+      .skin-blue .sidebar-menu > li.active > a:hover {
+        background: rgba(255,255,255,0.13) !important; color: #ffffff !important;
+        border-left: 3px solid #5DCAA5 !important; font-weight: 500;
+      }
+      .skin-blue .sidebar-menu > li > a > .fa { color: rgba(255,255,255,0.5) !important; }
+      .skin-blue .sidebar-menu > li.active > a > .fa { color: #5DCAA5 !important; }
+      .skin-blue .sidebar-menu > li.header {
+        color: rgba(255,255,255,0.3) !important; font-size: 10px !important;
+        font-weight: 500 !important; letter-spacing: 0.08em !important;
+        padding: 14px 16px 4px !important; text-transform: uppercase;
+      }
+      .sidebar .shiny-input-container .control-label { color: rgba(255,255,255,0.6) !important; font-size: 11px !important; }
+      .sidebar h4 { color: rgba(255,255,255,0.8) !important; font-size: 12px; font-weight: 500;
+        letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 10px 0;
+        padding-bottom: 8px; border-bottom: 0.5px solid rgba(255,255,255,0.12); }
+      .content-wrapper { background: #f5f4f0 !important; }
+      .content { padding: 16px !important; }
+      .box { border-radius: 10px !important; border: 0.5px solid #d3d1c7 !important;
+        border-top: none !important; box-shadow: none !important; background: #ffffff; }
+      .box-header { background: #ffffff !important; border-bottom: 0.5px solid #d3d1c7 !important;
+        border-radius: 10px 10px 0 0 !important; padding: 10px 14px !important; }
+      .box-header .box-title { color: #1a1a18 !important; font-size: 13px !important; font-weight: 500 !important; }
+      .box.box-primary { border-top: 2px solid #185FA5 !important; }
+      .box.box-success { border-top: 2px solid #0F6E56 !important; }
+      .box.box-danger  { border-top: 2px solid #993C1D !important; }
+      .box.box-warning { border-top: 2px solid #854F0B !important; }
+      .dataTables_wrapper { font-size: 13px; }
+      table.dataTable thead th { background: #f5f4f0 !important; color: #5F5E5A !important;
+        font-size: 11px !important; font-weight: 500 !important; letter-spacing: 0.05em;
+        text-transform: uppercase; border-bottom: 0.5px solid #d3d1c7 !important; }
+      table.dataTable tbody tr:hover { background: #f5f4f0 !important; }
+      .btn-primary { background: #185FA5 !important; border-color: #185FA5 !important; border-radius: 6px !important; font-size: 13px !important; }
+      .btn-primary:hover { background: #0C447C !important; border-color: #0C447C !important; }
+      .btn-warning { background: #854F0B !important; border-color: #854F0B !important; color: #ffffff !important; border-radius: 6px !important; font-size: 13px !important; }
+      .control-label { color: #444441 !important; font-size: 12px !important; font-weight: 500; }
+      .shiny-notification { border-radius: 8px !important; border: 0.5px solid #d3d1c7 !important; font-size: 13px; }
     "))),
     tabItems(
 
@@ -935,3 +989,31 @@ server <- function(input, output, session) {
 
 ui <- fluidPage(uiOutput("main_ui"))
 shinyApp(ui = ui, server = server)
+ 
+
+    
+
+
+
+
+    
+      
+     
+       
+  
+
+
+  
+   
+     
+  
+
+    
+     
+    
+   
+   
+
+    
+    
+ 
