@@ -124,64 +124,77 @@ limpiar_nombre_variable <- function(nombre) {
 
 generar_grafico <- function(df, variable) {
   if (nrow(df) == 0)
-    return(ggplot() + labs(title = "No hay datos para los filtros seleccionados") + theme_minimal())
+    return(ggplot() +
+      labs(title = "Sin datos para los filtros seleccionados") +
+      theme_void() +
+      theme(plot.title = element_text(hjust = 0.5, color = "#888780", size = 13)))
 
-  variable_sym  <- sym(variable)
-  nombre_limpio <- limpiar_nombre_variable(variable)
-
+  variable_sym <- sym(variable)
   df <- df %>%
     mutate(!!variable_sym := str_remove_all(as.character(!!variable_sym), "\\s*\\(.*?\\)"))
 
   df_conteo <- df %>%
     count(!!variable_sym) %>%
     mutate(
-      total_casos          = sum(n),
-      porcentaje           = (n / total_casos) * 100,
-      etiqueta_porcentaje  = paste0(round(porcentaje, 1), "%"),
-      etiqueta_casos       = paste0("N = ", format(n, big.mark = ","))
+      total_casos = sum(n),
+      porcentaje  = round((n / total_casos) * 100, 1)
     ) %>%
     arrange(desc(n))
 
   n_barras    <- nrow(df_conteo)
-  ancho_barra <- max(0.3, 0.8 / n_barras)
+  ancho_barra <- max(0.35, min(0.75, 0.9 / sqrt(n_barras)))
 
-  colores_grafico <- c(
-    "#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd",
-    "#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf",
-    "#aec7e8","#ffbb78"
-  )
+  paleta <- c("#185FA5","#0F6E56","#854F0B","#993C1D","#534AB7",
+              "#3B6D11","#5F5E5A","#993556","#0C447C","#633806",
+              "#712B13","#3C3489")
+  colores <- rep(paleta, length.out = n_barras)
 
-  titulo_formateado <- str_to_title(str_replace_all(variable, "_", " "))
+  titulo_fmt <- str_to_title(str_replace_all(variable, "_", " "))
+  total_fmt  <- format(sum(df_conteo$n), big.mark = ",")
 
-  p <- ggplot(df_conteo, aes(x = reorder(!!sym(variable), -n), y = n)) +
-    geom_bar(stat = "identity",
-             fill  = colores_grafico[seq_len(n_barras)],
-             alpha = 0.8, width = ancho_barra) +
-    geom_text(aes(label = etiqueta_casos),  vjust = -0.8, color = "darkblue",
-              size = 3.2, fontface = "bold") +
-    geom_text(aes(label = etiqueta_porcentaje), vjust = 0.5, color = "darkred",
-              size = 2.8, fontface = "bold") +
-    scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
+  p <- ggplot(df_conteo, aes(x = reorder(!!sym(variable), -n), y = n,
+                              text = paste0("<b>", !!sym(variable), "</b>",
+                                           "<br>Casos: ", format(n, big.mark = ","),
+                                           "<br>Porcentaje: ", porcentaje, "%"))) +
+    geom_bar(stat = "identity", fill = colores, width = ancho_barra, alpha = 0.9) +
+    geom_text(aes(label = format(n, big.mark = ",")),
+              vjust = -0.6, size = 3, color = "#444441", fontface = "plain") +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.18)),
+                       labels = scales::comma) +
     labs(
-      title    = paste("Distribución por", titulo_formateado),
-      subtitle = paste("Total de casos:", format(sum(df_conteo$n), big.mark = ",")),
-      x = titulo_formateado, y = "Frecuencia"
+      title    = paste("Distribución por", titulo_fmt),
+      subtitle = paste("Total:", total_fmt, "registros"),
+      x = NULL, y = "Frecuencia"
     ) +
     theme_minimal(base_size = 12) +
     theme(
-      plot.title    = element_text(hjust = 0.5, face = "bold", size = 14),
-      plot.subtitle = element_text(hjust = 0.5, size = 10, color = "gray50"),
-      axis.text.x   = element_text(angle = ifelse(n_barras > 5, 45, 0),
-                                   hjust = ifelse(n_barras > 5, 1, 0.5), size = 10),
+      plot.title      = element_text(size = 13, color = "#1a1a18", margin = margin(b = 4)),
+      plot.subtitle   = element_text(size = 11, color = "#888780", margin = margin(b = 12)),
+      axis.text.x     = element_text(angle = ifelse(n_barras > 6, 40, 0),
+                                     hjust = ifelse(n_barras > 6, 1, 0.5),
+                                     size = 10, color = "#444441"),
+      axis.text.y     = element_text(size = 9, color = "#888780"),
+      axis.title.y    = element_text(size = 10, color = "#888780", margin = margin(r = 8)),
       panel.grid.major.x = element_blank(),
-      panel.grid.minor.y = element_blank()
+      panel.grid.major.y = element_line(color = "#f1efe8", linewidth = 0.5),
+      panel.grid.minor   = element_blank(),
+      plot.background    = element_rect(fill = "white", color = NA),
+      panel.background   = element_rect(fill = "white", color = NA),
+      plot.margin        = margin(t = 10, r = 16, b = 10, l = 10)
     )
 
-  ggplotly(p, tooltip = c("x", "y")) %>%
-    layout(margin = list(t = 80, b = ifelse(n_barras > 5, 100, 60)),
-           xaxis  = list(tickangle = ifelse(n_barras > 5, -45, 0)))
+  ggplotly(p, tooltip = "text") %>%
+    layout(
+      margin = list(t = 60, b = ifelse(n_barras > 6, 110, 50), l = 50, r = 20),
+      xaxis  = list(tickangle = ifelse(n_barras > 6, -40, 0), tickfont = list(size = 11)),
+      yaxis  = list(gridcolor = "#f1efe8", tickfont = list(size = 10)),
+      hoverlabel = list(bgcolor = "white", bordercolor = "#d3d1c7",
+                        font = list(size = 12, color = "#1a1a18")),
+      plot_bgcolor  = "white",
+      paper_bgcolor = "white"
+    ) %>%
+    config(displayModeBar = FALSE)
 }
-
 generar_tabla <- function(datos, variable) {
   datos %>%
     count(!!sym(variable)) %>%
