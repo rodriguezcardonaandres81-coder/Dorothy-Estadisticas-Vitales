@@ -708,10 +708,9 @@ server <- function(input, output, session) {
     if (!is.null(input$f_area_residencia) && length(input$f_area_residencia) > 0)
       df <- df %>% filter(area_residencia %in% input$f_area_residencia)
     if (nrow(df) == 0) return(div(style = "text-align:center; margin-top:50px;", h4("Sin datos.")))
-    tagList(
-      div(style = "text-align:center;", h4(paste("Total Nacimientos:", nrow(df)))),
-      plotlyOutput("piramide_poblacional_output")
-    )
+tagList(
+  plotlyOutput("piramide_poblacional_output")
+)
   })
 
   output$piramide_poblacional_output <- renderPlotly({
