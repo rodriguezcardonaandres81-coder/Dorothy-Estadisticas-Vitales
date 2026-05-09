@@ -715,43 +715,80 @@ server <- function(input, output, session) {
   })
 
   output$piramide_poblacional_output <- renderPlotly({
-    req(datos_filtrados())
-    df <- datos_filtrados()
-    if (!is.null(input$f_municipio_residencia) && length(input$f_municipio_residencia) > 0)
-      df <- df %>% filter(municipio_residencia %in% input$f_municipio_residencia)
-    if (!is.null(input$f_area_residencia) && length(input$f_area_residencia) > 0)
-      df <- df %>% filter(area_residencia %in% input$f_area_residencia)
-    if (nrow(df) == 0) return(plotly_empty() %>% layout(title = "Sin datos"))
+  req(datos_filtrados())
+  df <- datos_filtrados()
+  if (!is.null(input$f_municipio_residencia) && length(input$f_municipio_residencia) > 0)
+    df <- df %>% filter(municipio_residencia %in% input$f_municipio_residencia)
+  if (!is.null(input$f_area_residencia) && length(input$f_area_residencia) > 0)
+    df <- df %>% filter(area_residencia %in% input$f_area_residencia)
+  if (nrow(df) == 0) return(plotly_empty() %>% layout(title = "Sin datos"))
 
-    df_conteo <- df %>%
-      pivot_longer(cols = c(grupo_etario_madre, grupo_etario_padre),
-                   names_to = "rol", values_to = "grupo_etario") %>%
-      mutate(rol = str_replace(rol, "grupo_etario_", "") %>% str_to_title()) %>%
-      count(rol, grupo_etario, .drop = FALSE) %>%
-      group_by(rol) %>%
-      mutate(
-        total_por_rol       = sum(n),
-        porcentaje          = (n / total_por_rol) * 100,
-        porcentaje          = if_else(is.na(porcentaje), 0, porcentaje),
-        porcentaje_piramide = if_else(rol == "Madre", -porcentaje, porcentaje)
-      ) %>% ungroup()
+  orden_grupos <- c("<10","10-14","15-19","20-24","25-29","30-34","35-39","40 o más","Sin dato")
 
-    p <- ggplot(df_conteo,
-                aes(x = grupo_etario, y = porcentaje_piramide, fill = rol,
-                    text = paste("Rol:", rol, "<br>Grupo:", grupo_etario,
-                                 "<br>Casos:", n, "<br>%:", round(porcentaje,2)))) +
-      geom_bar(stat = "identity") +
-      scale_fill_manual(values = c("Madre" = "#E86A92", "Padre" = "#56B4E9")) +
-      coord_flip() +
-      scale_y_continuous(breaks = seq(-100,100,10), labels = abs(seq(-100,100,10))) +
-      labs(x = "Grupo Etario", y = "Porcentaje", fill = "Rol") +
-      theme_minimal() +
-      theme(axis.text.y = element_text(size=10, face="bold"), legend.position = "bottom")
+  df_conteo <- df %>%
+    pivot_longer(cols = c(grupo_etario_madre, grupo_etario_padre),
+                 names_to = "rol", values_to = "grupo_etario") %>%
+    mutate(rol = str_replace(rol, "grupo_etario_", "") %>% str_to_title()) %>%
+    count(rol, grupo_etario, .drop = FALSE) %>%
+    group_by(rol) %>%
+    mutate(
+      total_por_rol       = sum(n),
+      porcentaje          = round((n / total_por_rol) * 100, 1),
+      porcentaje          = if_else(is.na(porcentaje), 0, porcentaje),
+      porcentaje_piramide = if_else(rol == "Madre", -porcentaje, porcentaje),
+      grupo_etario        = factor(grupo_etario, levels = orden_grupos)
+    ) %>%
+    ungroup()
 
-    ggplotly(p, tooltip = "text") %>%
-      layout(title = list(text = "Pirámide Poblacional", x = 0.5))
-  })
+  p <- ggplot(df_conteo,
+              aes(x = grupo_etario, y = porcentaje_piramide, fill = rol,
+                  text = paste0("<b>", rol, " — ", grupo_etario, "</b>",
+                                "<br>Casos: ", n,
+                                "<br>Porcentaje: ", abs(porcentaje), "%"))) +
+    geom_bar(stat = "identity", width = 0.7, alpha = 0.9) +
+    scale_fill_manual(values = c("Madre" = "#993556", "Padre" = "#185FA5")) +
+    scale_y_continuous(
+      breaks = seq(-40, 40, 10),
+      labels = function(x) paste0(abs(x), "%")
+    ) +
+    coord_flip() +
+    labs(x = NULL, y = "Porcentaje", fill = NULL) +
+    theme_minimal(base_size = 12) +
+    theme(
+      plot.title       = element_text(size = 13, color = "#1a1a18", margin = margin(b = 4)),
+      plot.subtitle    = element_text(size = 11, color = "#888780", margin = margin(b = 12)),
+      axis.text.y      = element_text(size = 10, color = "#444441"),
+      axis.text.x      = element_text(size = 9,  color = "#888780"),
+      axis.title.x     = element_text(size = 10, color = "#888780"),
+      panel.grid.major.y = element_blank(),
+      panel.grid.major.x = element_line(color = "#f1efe8", linewidth = 0.5),
+      panel.grid.minor   = element_blank(),
+      legend.position    = "bottom",
+      legend.text        = element_text(size = 11, color = "#444441"),
+      plot.background    = element_rect(fill = "white", color = NA),
+      panel.background   = element_rect(fill = "white", color = NA),
+      plot.margin        = margin(t = 10, r = 16, b = 10, l = 10)
+    ) +
+    geom_vline(xintercept = 0, color = "#d3d1c7", linewidth = 0.5)
 
+  ggplotly(p, tooltip = "text") %>%
+    layout(
+      title = list(
+        text = paste0("<b>Pirámide poblacional</b><br>",
+                      "<span style='font-size:11px;color:#888780'>",
+                      "Total nacimientos: ", format(nrow(df), big.mark = ","), "</span>"),
+        x = 0.5, xanchor = "center", font = list(size = 14, color = "#1a1a18")
+      ),
+      legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.15),
+      margin = list(t = 80, b = 60, l = 20, r = 20),
+      plot_bgcolor  = "white",
+      paper_bgcolor = "white",
+      xaxis = list(tickfont = list(size = 10, color = "#888780"),
+                   gridcolor = "#f1efe8", zerolinecolor = "#d3d1c7"),
+      yaxis = list(tickfont = list(size = 10, color = "#444441"))
+    ) %>%
+    config(displayModeBar = FALSE)
+})
   # --- Análisis de tendencia ---
   output$tabla_tendencia <- renderDT({
     req(input$f_mes, datos_cargados())
