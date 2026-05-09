@@ -261,6 +261,7 @@ login_ui <- fluidPage(
 # ==============================================================================
 
 main_ui <- dashboardPage(
+  skin = "blue",
   dashboardHeader(
     title     = "Dorothy — Estadísticas Vitales",
     titleWidth = 320
@@ -300,8 +301,20 @@ main_ui <- dashboardPage(
       body, .skin-blue .main-header .logo, .skin-blue .main-header .navbar {
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       }
-      .skin-blue .main-sidebar { background: #0C447C; }
-      .skin-blue .sidebar { background: #0C447C; }
+      .skin-blue .main-sidebar { background: #0C447C !important; }
+      .skin-blue .sidebar { background: #0C447C !important; }
+      .main-sidebar { background: #0C447C !important; }
+      .left-side { background: #0C447C !important; }
+      .sidebar-menu > li > a { color: rgba(255,255,255,0.7) !important; }
+      .sidebar-menu > li.active > a { 
+        background: rgba(255,255,255,0.13) !important; 
+        color: #ffffff !important;
+        border-left: 3px solid #5DCAA5 !important;
+      }
+      .sidebar-menu > li > a:hover {
+        background: rgba(255,255,255,0.1) !important;
+        color: #ffffff !important;
+      }
       .skin-blue .main-header .logo {
         background: #083260 !important;
         border-bottom: 0.5px solid rgba(255,255,255,0.08) !important;
@@ -989,31 +1002,3 @@ server <- function(input, output, session) {
 
 ui <- fluidPage(uiOutput("main_ui"))
 shinyApp(ui = ui, server = server)
- 
-
-    
-
-
-
-
-    
-      
-     
-       
-  
-
-
-  
-   
-     
-  
-
-    
-     
-    
-   
-   
-
-    
-    
- 
